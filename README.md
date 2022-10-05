@@ -2,6 +2,11 @@
 
 Dice roll plugin for bevy
 
+
+https://user-images.githubusercontent.com/97428129/194178018-2eafa7f7-88c9-466f-91a8-56a9ce15d799.mp4
+
+Physics-based dice rolls for bevy.
+
 ## Dice 3D Model
 
 Model Information:
