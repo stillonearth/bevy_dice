@@ -31,10 +31,14 @@ pub(crate) enum GameLayer {
     Dice,
 }
 
-fn setup_scene(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+fn setup_scene(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     // Spawn camera
     commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.7, 0.7, 1.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+        transform: Transform::from_xyz(0.0, 2.0, 1.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..default()
     });
     // Spawn light
@@ -61,20 +65,27 @@ fn setup_scene(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
 
+    let white_material_handle = materials.add(Color::WHITE.into());
+
     commands
         .spawn_bundle(PbrBundle {
             mesh: mesh.clone(),
-            transform: Transform::from_xyz(0.0, -0.5, 0.0),
+            transform: Transform::from_xyz(0.0, -3.0, 0.0),
+            material: white_material_handle.clone(),
             ..Default::default()
         })
         .insert(RigidBody::Static)
         .insert(CollisionShape::HeightField {
-            size: Vec2::new(1. * PLANE_SIZE.0, 1. * PLANE_SIZE.1),
+            size: Vec2::new(100. * PLANE_SIZE.0, 100. * PLANE_SIZE.1),
             heights: vec![vec![0.0, 0.0, 0.0, 0.0, 0.0], vec![0.0, 0.0, 0.0, 0.0, 0.0]],
+        })
+        .insert(PhysicMaterial {
+            friction: 10.0,
+            density: 1.0,
+            ..Default::default()
         })
         .insert(Name::new("Ground"))
         .insert(
-            // Define the collision layer of this *collision shape*
             CollisionLayers::none()
                 .with_group(GameLayer::Dice) // <-- Mark it as the player
                 .with_masks(&[GameLayer::Dice]), // <-- Defines that the player collides with world and enemies (but not with other players)
@@ -115,7 +126,7 @@ fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn_bundle(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(150.0), Val::Px(65.0)),
-                margin: UiRect::all(Val::Auto),
+                // margin: UiRect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 ..default()
@@ -144,6 +155,7 @@ fn event_start_dice_roll(
     mut meshes: ResMut<Assets<Mesh>>,
     mut events: EventReader<DiceRollStartEvent>,
     q_dice: Query<(Entity, &Dice)>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if events.iter().len() == 0 {
         return;
@@ -162,13 +174,14 @@ fn event_start_dice_roll(
         rng.gen_range(0.0..std::f32::consts::PI * 2.0),
         rng.gen_range(0.0..std::f32::consts::PI * 2.0),
     );
-    let transform = Transform::from_xyz(0., rng.gen_range(0.0..2.0), 0.).with_rotation(rotation);
+    let transform = Transform::from_xyz(0., rng.gen_range(1.0..3.0), 0.).with_rotation(rotation);
+    let transparent_material_handle = materials.add(Color::rgba(0., 0., 0., 0.).into());
 
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            computed_visibility: ComputedVisibility::not_visible(),
+            material: transparent_material_handle,
             ..default()
         })
         .with_children(|parent| {
@@ -183,17 +196,16 @@ fn event_start_dice_roll(
         .insert(Name::new("Dice"))
         .insert(RigidBody::Dynamic)
         .insert(PhysicMaterial {
-            friction: 1.0,
-            density: 10.0,
+            friction: 10.0,
+            density: 2.0,
             ..Default::default()
         })
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::splat(0.5),
-            border_radius: None,
+            border_radius: Some(0.001),
         })
         .insert(Dice)
         .insert(
-            // Define the collision layer of this *collision shape*
             CollisionLayers::none()
                 .with_group(GameLayer::Dice) // <-- Mark it as the player
                 .with_masks(&[GameLayer::Dice]), // <-- Defines that the player collides with world and enemies (but not with other players)
@@ -217,7 +229,7 @@ fn event_collisions(
                 }
 
                 if is_dice(entity_2) {
-                    ev_dice_stopped.send(DiceRollEndEvent(entity_1));
+                    ev_dice_stopped.send(DiceRollEndEvent(entity_2));
                 }
             }
             _ => {}
@@ -229,12 +241,12 @@ struct DiceRollEndEvent(Entity);
 struct DiceRollStartEvent(Entity);
 
 const CUBE_SIDES: [Vec3; 6] = [
-    Vec3::new(0.0, 0.0, 1.0),
-    Vec3::new(0.0, 0.0, -1.0),
-    Vec3::new(-1.0, 0.0, 0.0),
-    Vec3::new(1.0, 0.0, 0.0),
     Vec3::new(0.0, 1.0, 0.0),
     Vec3::new(0.0, -1.0, 0.0),
+    Vec3::new(0.0, 0.0, 1.0),
+    Vec3::new(0.0, 0.0, -1.0),
+    Vec3::new(1.0, 0.0, 0.0),
+    Vec3::new(-1.0, 0.0, 0.0),
 ];
 
 fn event_stop_dice_rolls(
@@ -246,11 +258,23 @@ fn event_stop_dice_rolls(
             let mut height = 0.0;
             let mut value = 0;
             for (i, side) in CUBE_SIDES.iter().enumerate() {
+                println!("{}: {:?}", i, transform.rotation.mul_vec3(*side));
                 let y = transform.rotation.mul_vec3(*side)[1];
                 if height < y {
                     height = y;
                     value = i + 1;
                 }
+            }
+            if value == 5 {
+                value = 2;
+            } else if value == 4 {
+                value = 3;
+            } else if value == 2 {
+                value = 6;
+            } else if value == 6 {
+                value = 5;
+            } else if value == 3 {
+                value = 4;
             }
             println!("Dice {:?} value: {}", dice, value);
         }
