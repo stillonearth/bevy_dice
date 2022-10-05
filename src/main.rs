@@ -24,11 +24,12 @@ fn main() {
         .run();
 }
 
-const PLANE_SIZE: (f32, f32) = (32.0, 32.0);
+const PLANE_SIZE: (f32, f32) = (64.0, 64.0);
 
 #[derive(PhysicsLayer)]
 pub(crate) enum GameLayer {
     Dice,
+    World,
 }
 
 fn setup_scene(
@@ -65,13 +66,13 @@ fn setup_scene(
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
 
-    let white_material_handle = materials.add(Color::WHITE.into());
+    let material_handle = materials.add(Color::RED.into());
 
     commands
         .spawn_bundle(PbrBundle {
             mesh: mesh.clone(),
-            transform: Transform::from_xyz(0.0, -3.0, 0.0),
-            material: white_material_handle.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            material: material_handle.clone(),
             ..Default::default()
         })
         .insert(RigidBody::Static)
@@ -87,8 +88,8 @@ fn setup_scene(
         .insert(Name::new("Ground"))
         .insert(
             CollisionLayers::none()
-                .with_group(GameLayer::Dice) // <-- Mark it as the player
-                .with_masks(&[GameLayer::Dice]), // <-- Defines that the player collides with world and enemies (but not with other players)
+                .with_group(GameLayer::World)
+                .with_masks(&[GameLayer::Dice]),
         );
 }
 
@@ -187,8 +188,7 @@ fn event_start_dice_roll(
         .with_children(|parent| {
             parent.spawn_bundle(SceneBundle {
                 scene: scene_handle.clone(),
-                transform: Transform::from_xyz(0., 0.0, 0.).with_scale(Vec3::splat(0.12)),
-                visibility: Visibility { is_visible: true },
+                transform: Transform::from_xyz(0., 0.0, 0.).with_scale(Vec3::splat(0.1)),
                 ..default()
             });
         })
@@ -202,13 +202,13 @@ fn event_start_dice_roll(
         })
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::splat(0.5),
-            border_radius: Some(0.001),
+            border_radius: Some(0.0),
         })
         .insert(Dice)
         .insert(
             CollisionLayers::none()
-                .with_group(GameLayer::Dice) // <-- Mark it as the player
-                .with_masks(&[GameLayer::Dice]), // <-- Defines that the player collides with world and enemies (but not with other players)
+                .with_group(GameLayer::Dice)
+                .with_masks(&[GameLayer::World]),
         );
 }
 
@@ -220,6 +220,8 @@ fn event_collisions(
     let is_dice = |entity: Entity| q_dice.get(entity).is_ok();
 
     for event in events.iter() {
+        println!("Collisions");
+
         let (entity_1, entity_2) = event.rigid_body_entities();
 
         match event {
