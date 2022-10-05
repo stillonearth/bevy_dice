@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::WorldInspectorPlugin;
-use heron::*;
+use bevy_debug_text_overlay::{screen_print, OverlayPlugin};
+use bevy_rapier3d::prelude::*;
 use rand::Rng;
 
 fn main() {
@@ -10,9 +10,13 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(PhysicsPlugin::default()) // Add the plugin
-        .insert_resource(Gravity::from(Vec3::new(0.0, -9.81, 0.0)))
-        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+        // .add_plugin(RapierDebugRenderPlugin::default())
+        // .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(OverlayPlugin {
+            font_size: 32.0,
+            ..default()
+        })
         .add_event::<DiceRollEndEvent>()
         .add_event::<DiceRollStartEvent>()
         .add_startup_system(setup_scene)
@@ -26,12 +30,6 @@ fn main() {
 
 const PLANE_SIZE: (f32, f32) = (64.0, 64.0);
 
-#[derive(PhysicsLayer)]
-pub(crate) enum GameLayer {
-    Dice,
-    World,
-}
-
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -39,7 +37,7 @@ fn setup_scene(
 ) {
     // Spawn camera
     commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 2.0, 1.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+        transform: Transform::from_xyz(0.0, 3.0, 1.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..default()
     });
     // Spawn light
@@ -66,7 +64,7 @@ fn setup_scene(
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
 
-    let material_handle = materials.add(Color::RED.into());
+    let material_handle = materials.add(Color::GREEN.into());
 
     commands
         .spawn_bundle(PbrBundle {
@@ -75,22 +73,11 @@ fn setup_scene(
             material: material_handle.clone(),
             ..Default::default()
         })
-        .insert(RigidBody::Static)
-        .insert(CollisionShape::HeightField {
-            size: Vec2::new(100. * PLANE_SIZE.0, 100. * PLANE_SIZE.1),
-            heights: vec![vec![0.0, 0.0, 0.0, 0.0, 0.0], vec![0.0, 0.0, 0.0, 0.0, 0.0]],
-        })
-        .insert(PhysicMaterial {
-            friction: 10.0,
-            density: 1.0,
-            ..Default::default()
-        })
-        .insert(Name::new("Ground"))
-        .insert(
-            CollisionLayers::none()
-                .with_group(GameLayer::World)
-                .with_masks(&[GameLayer::Dice]),
-        );
+        .insert(RigidBody::Fixed)
+        .insert(Collider::cuboid(PLANE_SIZE.0, 1.0, PLANE_SIZE.1))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        // .insert(Sensor(true))
+        .insert(Name::new("Ground"));
 }
 
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -195,21 +182,9 @@ fn event_start_dice_roll(
         .insert(transform)
         .insert(Name::new("Dice"))
         .insert(RigidBody::Dynamic)
-        .insert(PhysicMaterial {
-            friction: 10.0,
-            density: 2.0,
-            ..Default::default()
-        })
-        .insert(CollisionShape::Cuboid {
-            half_extends: Vec3::splat(0.5),
-            border_radius: Some(0.0),
-        })
-        .insert(Dice)
-        .insert(
-            CollisionLayers::none()
-                .with_group(GameLayer::Dice)
-                .with_masks(&[GameLayer::World]),
-        );
+        .insert(Collider::cuboid(0.04, 0.04, 0.04))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(Dice);
 }
 
 fn event_collisions(
@@ -217,24 +192,28 @@ fn event_collisions(
     mut ev_dice_stopped: EventWriter<DiceRollEndEvent>,
     q_dice: Query<(Entity, &Dice)>,
 ) {
-    let is_dice = |entity: Entity| q_dice.get(entity).is_ok();
+    let is_dice = |entity: &Entity| q_dice.get(*entity).is_ok();
 
     for event in events.iter() {
-        println!("Collisions");
-
-        let (entity_1, entity_2) = event.rigid_body_entities();
-
         match event {
-            CollisionEvent::Stopped(_, _) => {
+            CollisionEvent::Started(entity_1, entity_2, _) => {
                 if is_dice(entity_1) {
-                    ev_dice_stopped.send(DiceRollEndEvent(entity_1));
+                    ev_dice_stopped.send(DiceRollEndEvent(*entity_1));
                 }
 
                 if is_dice(entity_2) {
-                    ev_dice_stopped.send(DiceRollEndEvent(entity_2));
+                    ev_dice_stopped.send(DiceRollEndEvent(*entity_2));
                 }
             }
-            _ => {}
+            CollisionEvent::Stopped(entity_1, entity_2, _) => {
+                if is_dice(entity_1) {
+                    ev_dice_stopped.send(DiceRollEndEvent(*entity_1));
+                }
+
+                if is_dice(entity_2) {
+                    ev_dice_stopped.send(DiceRollEndEvent(*entity_2));
+                }
+            }
         }
     }
 }
@@ -244,11 +223,11 @@ struct DiceRollStartEvent(Entity);
 
 const CUBE_SIDES: [Vec3; 6] = [
     Vec3::new(0.0, 1.0, 0.0),
-    Vec3::new(0.0, -1.0, 0.0),
-    Vec3::new(0.0, 0.0, 1.0),
-    Vec3::new(0.0, 0.0, -1.0),
     Vec3::new(1.0, 0.0, 0.0),
+    Vec3::new(0.0, 0.0, -1.0),
+    Vec3::new(0.0, 0.0, 1.0),
     Vec3::new(-1.0, 0.0, 0.0),
+    Vec3::new(0.0, -1.0, 0.0),
 ];
 
 fn event_stop_dice_rolls(
@@ -260,25 +239,14 @@ fn event_stop_dice_rolls(
             let mut height = 0.0;
             let mut value = 0;
             for (i, side) in CUBE_SIDES.iter().enumerate() {
-                println!("{}: {:?}", i, transform.rotation.mul_vec3(*side));
                 let y = transform.rotation.mul_vec3(*side)[1];
                 if height < y {
                     height = y;
                     value = i + 1;
                 }
             }
-            if value == 5 {
-                value = 2;
-            } else if value == 4 {
-                value = 3;
-            } else if value == 2 {
-                value = 6;
-            } else if value == 6 {
-                value = 5;
-            } else if value == 3 {
-                value = 4;
-            }
-            println!("Dice {:?} value: {}", dice, value);
+
+            screen_print!(col: Color::CYAN, "dice: {dice} value: {value}");
         }
     }
 }
