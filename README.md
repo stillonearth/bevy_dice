@@ -2,7 +2,7 @@
 
 Physics-based dice rolls for bevy.
 
-https://user-images.githubusercontent.com/97428129/194178018-2eafa7f7-88c9-466f-91a8-56a9ce15d799.mp4
+https://user-images.githubusercontent.com/97428129/194188651-3a558020-bab3-4a77-b89b-5c69f445bcd4.mp4
 
 ## Dependencies
 
