@@ -1,12 +1,10 @@
 # bevy_dice
 
-Physics-based dice rolls for bevy. This is a work in progress. You can you this plugin yo build tabletop games.
+Physics-based dice rolls for bevy. This is a work in progress. You can you this plugin to build tabletop games.
 
-https://user-images.githubusercontent.com/97428129/194178018-2eafa7f7-88c9-466f-91a8-56a9ce15d799.mp4
+https://user-images.githubusercontent.com/97428129/194198974-239a14d2-0056-45c0-982f-06f9604cc5d1.mp4
 
-Dice rolls are performed in a physical space, rendered to a image handle which you can display in your UI when dice rolls are needed.
-
-Dice roll results are emmited as events, so you can listen for them and perform actions based on the result.
+Dice rolls are performed in a physical space, rendered to a image handle which you can display in your UI when dice rolls are needed. Results are emmited as events, so you can listen for them and perform actions based on the result.
 
 ## Dependencies
 
@@ -15,7 +13,6 @@ Dice roll results are emmited as events, so you can listen for them and perform 
 | bevy          | 0.8.1   |
 | bevy_rapier3d | 0.17.0  |
 
-````
 
 ## Usage
 
