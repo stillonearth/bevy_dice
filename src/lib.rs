@@ -28,7 +28,8 @@ impl Plugin for DicePlugin {
             .add_event::<DiceRollResult>()
             .add_system(event_collisions)
             .add_system(event_stop_dice_rolls)
-            .add_system(event_start_dice_roll);
+            .add_system(event_start_dice_roll)
+            .insert_resource(DiceRollResult::default());
     }
 }
 
@@ -116,7 +117,7 @@ fn setup_scene(
         })
         .insert(RigidBody::Fixed)
         .insert(Collider::cuboid(PLANE_SIZE.0, 1.0, PLANE_SIZE.1))
-        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(ActiveEvents::CONTACT_FORCE_EVENTS)
         // .insert(Sensor(true))
         .insert(Name::new("Ground"));
 }
@@ -132,10 +133,14 @@ fn event_start_dice_roll(
     q_dice: Query<(Entity, &Dice)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     dice_settings: Res<DicePluginSettings>,
+    mut previous_roll: ResMut<DiceRollResult>,
 ) {
     if events.iter().len() == 0 {
         return;
     }
+
+    // Remove previous dice
+    previous_roll.value = Vec::new();
 
     // clear previously spawned dice
     q_dice.iter().for_each(|(entity, _)| {
@@ -181,13 +186,24 @@ fn event_start_dice_roll(
 }
 
 fn event_collisions(
-    mut events: EventReader<CollisionEvent>,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
     mut ev_dice_stopped: EventWriter<DiceRollEndEvent>,
     q_dice: Query<(Entity, &Dice)>,
 ) {
     let is_dice = |entity: &Entity| q_dice.get(*entity).is_ok();
 
-    for event in events.iter() {
+    for event in contact_force_events.iter() {
+        if is_dice(&event.collider1) {
+            ev_dice_stopped.send(DiceRollEndEvent(event.collider1));
+        }
+
+        if is_dice(&event.collider2) {
+            ev_dice_stopped.send(DiceRollEndEvent(event.collider2));
+        }
+    }
+
+    for event in collision_events.iter() {
         match event {
             CollisionEvent::Started(entity_1, entity_2, _) => {
                 if is_dice(entity_1) {
@@ -223,7 +239,7 @@ const CUBE_SIDES: [Vec3; 6] = [
     Vec3::new(0.0, -1.0, 0.0),
 ];
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct DiceRollResult {
     pub value: Vec<usize>,
 }
@@ -232,6 +248,7 @@ fn event_stop_dice_rolls(
     mut event_reader: EventReader<DiceRollEndEvent>,
     mut event_writer: EventWriter<DiceRollResult>,
     query: Query<(Entity, &Transform, &Dice)>,
+    mut previous_roll: ResMut<DiceRollResult>,
 ) {
     for _ in event_reader.iter() {
         let mut result = DiceRollResult { ..default() };
@@ -250,6 +267,9 @@ fn event_stop_dice_rolls(
             result.value.push(value);
         }
 
-        event_writer.send(result);
+        if previous_roll.value != result.value {
+            previous_roll.value = result.value.clone();
+            event_writer.send(result.clone());
+        }
     }
 }
