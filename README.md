@@ -2,7 +2,7 @@
 
 Physics-based dice rolls for bevy. This is a work in progress. You can you this plugin yo build tabletop games.
 
-https://user-images.githubusercontent.com/97428129/194178018-2eafa7f7-88c9-466f-91a8-56a9ce15d799.mp4
+https://user-images.githubusercontent.com/97428129/194198974-239a14d2-0056-45c0-982f-06f9604cc5d1.mp4
 
 Dice rolls are performed in a physical space, rendered to a image handle which you can display in your UI when dice rolls are needed.
 
