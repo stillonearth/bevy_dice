@@ -1,22 +1,28 @@
 # bevy_dice
 
-Physics-based dice rolls for bevy.
+Physics-based dice rolls for bevy. This is a work in progress. You can you this plugin yo build tabletop games.
 
-https://user-images.githubusercontent.com/97428129/194188651-3a558020-bab3-4a77-b89b-5c69f445bcd4.mp4
+https://user-images.githubusercontent.com/97428129/194178018-2eafa7f7-88c9-466f-91a8-56a9ce15d799.mp4
+
+Dice rolls are performed in a physical space, rendered to a image handle which you can display in your UI when dice rolls are needed.
+
+Dice roll results are emmited as events, so you can listen for them and perform actions based on the result.
 
 ## Dependencies
 
-```toml
-bevy = { version = "0.8.1" }
-bevy_rapier3d = { version = "0.17.0" }
-```
+| Name          | Version |
+| ------------- | ------- |
+| bevy          | 0.8.1   |
+| bevy_rapier3d | 0.17.0  |
+
+````
 
 ## Usage
 
 ```rust
 use bevy::prelude::*;
 use bevy_debug_text_overlay::{screen_print, OverlayPlugin};
-use bevy_dice::{DicePlugin, DiceRollResult, DiceRollStartEvent};
+use bevy_dice::{DicePlugin, DicePluginSettings, DiceRollResult, DiceRollStartEvent};
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -27,12 +33,17 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(DicePlugin)
         .add_plugin(OverlayPlugin {
             font_size: 32.0,
             ..default()
         })
-        .add_startup_system(setup_button)
+        .add_plugin(DicePlugin)
+        .insert_resource(DicePluginSettings {
+            num_dice: 1,
+            render_size: (512, 512),
+            render_handle: None,
+        })
+        .add_startup_system(setup.after("dice_plugin_init"))
         .add_system(button_system)
         .add_system(display_roll_result)
         .run();
@@ -65,7 +76,18 @@ fn button_system(
     }
 }
 
-fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    dice_plugin_settings: Res<DicePluginSettings>,
+) {
+    commands.spawn_bundle(Camera2dBundle::default());
+
+    commands.spawn_bundle(SpriteBundle {
+        texture: dice_plugin_settings.render_handle.clone().unwrap(),
+        ..default()
+    });
+
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -91,10 +113,11 @@ fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn display_roll_result(mut dice_rolls: EventReader<DiceRollResult>) {
     for event in dice_rolls.iter() {
-        screen_print!(col: Color::CYAN, "Dice roll result: {0}", event.value);
+        screen_print!(col: Color::CYAN, "Dice roll result: {0}", event.value[0]);
     }
 }
-```
+
+````
 
 ## Dice 3D Model
 

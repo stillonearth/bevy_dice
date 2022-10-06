@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_debug_text_overlay::{screen_print, OverlayPlugin};
-use bevy_dice::{DicePlugin, DiceRollResult, DiceRollStartEvent};
+use bevy_dice::{DicePlugin, DicePluginSettings, DiceRollResult, DiceRollStartEvent};
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -11,12 +11,17 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(DicePlugin)
         .add_plugin(OverlayPlugin {
             font_size: 32.0,
             ..default()
         })
-        .add_startup_system(setup_button)
+        .add_plugin(DicePlugin)
+        .insert_resource(DicePluginSettings {
+            num_dice: 1,
+            render_size: (512, 512),
+            render_handle: None,
+        })
+        .add_startup_system(setup.after("dice_plugin_init"))
         .add_system(button_system)
         .add_system(display_roll_result)
         .run();
@@ -49,7 +54,18 @@ fn button_system(
     }
 }
 
-fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    dice_plugin_settings: Res<DicePluginSettings>,
+) {
+    commands.spawn_bundle(Camera2dBundle::default());
+
+    commands.spawn_bundle(SpriteBundle {
+        texture: dice_plugin_settings.render_handle.clone().unwrap(),
+        ..default()
+    });
+
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -75,6 +91,6 @@ fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn display_roll_result(mut dice_rolls: EventReader<DiceRollResult>) {
     for event in dice_rolls.iter() {
-        screen_print!(col: Color::CYAN, "Dice roll result: {0}", event.value);
+        screen_print!(col: Color::CYAN, "Dice roll result: {0}", event.value[0]);
     }
 }
