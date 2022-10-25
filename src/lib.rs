@@ -39,7 +39,7 @@ pub struct DiceCamera;
 
 const HALF_SIZE: f32 = 1.0;
 fn setup_scene(
-    mut commands: Commands,
+    _commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
@@ -57,7 +57,7 @@ fn setup_scene(
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
 
-    for i in 0..plugin_settings.number_of_fields {
+    for _i in 0..plugin_settings.number_of_fields {
         let mut world = World::new();
 
         let mut image = Image {
@@ -137,6 +137,7 @@ struct Dice {
     pub world: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn event_start_dice_roll(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -165,7 +166,7 @@ fn event_start_dice_roll(
     let mut rng = rand::thread_rng();
 
     for event in events.iter() {
-        for (i, mut world) in plugin_settings.worlds.iter_mut().enumerate() {
+        for (i, world) in plugin_settings.worlds.iter_mut().enumerate() {
             for _i in 0..event.num_dice[i] {
                 let rotation = Quat::from_euler(
                     EulerRot::XYZ,
