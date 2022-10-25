@@ -46,7 +46,7 @@ fn button_system(
             Interaction::Clicked => {
                 *color = PRESSED_BUTTON.into();
 
-                let mut num_dice: Vec<usize> = vec![2, 2];
+                let num_dice: Vec<usize> = vec![2, 2];
 
                 ev_dice_started.send(DiceRollStartEvent { num_dice });
             }
