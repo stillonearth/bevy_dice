@@ -10,14 +10,15 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 use rand::Rng;
 
-const PLANE_SIZE: (f32, f32) = (64.0, 64.0);
+const PLANE_SIZE: (f32, f32) = (32.0, 32.0);
 
 pub struct DicePlugin;
 
 pub struct DicePluginSettings {
-    pub num_dice: usize,
     pub render_size: (u32, u32),
-    pub render_handle: Option<Handle<Image>>,
+    pub number_of_fields: usize,
+    pub render_handles: Vec<Handle<Image>>,
+    worlds: Vec<World>,
 }
 
 impl Plugin for DicePlugin {
@@ -36,6 +37,7 @@ impl Plugin for DicePlugin {
 #[derive(Component)]
 pub struct DiceCamera;
 
+const HALF_SIZE: f32 = 1.0;
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -49,81 +51,91 @@ fn setup_scene(
         height: plugin_settings.render_size.1,
         ..default()
     };
-    let mut image = Image {
-        texture_descriptor: TextureDescriptor {
-            label: None,
-            size,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Bgra8UnormSrgb,
-            mip_level_count: 1,
-            sample_count: 1,
-            usage: TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
-        },
-        ..default()
-    };
-    image.resize(size);
-    let image_handle = images.add(image);
-    plugin_settings.render_handle = Some(image_handle.clone());
 
-    // Spawn camera
-    commands
-        .spawn_bundle(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 3.0, 1.0)
-                .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
-            camera: Camera {
-                priority: -1,
-                target: RenderTarget::Image(image_handle.clone()),
-                ..default()
-            },
-            ..default()
-        })
-        .insert(DiceCamera)
-        .insert(UiCameraConfig { show_ui: false });
-
-    // Spawn light
-    const HALF_SIZE: f32 = 1.0;
-    commands.spawn_bundle(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            shadow_projection: OrthographicProjection {
-                left: -HALF_SIZE,
-                right: HALF_SIZE,
-                bottom: -HALF_SIZE,
-                top: HALF_SIZE,
-                near: -10.0 * HALF_SIZE,
-                far: 10.0 * HALF_SIZE,
-                ..default()
-            },
-            shadows_enabled: true,
-            ..default()
-        },
-        ..default()
-    });
-
-    // Spawn ground
+    // Ground
     let mesh = meshes.add(Mesh::from(shape::Plane {
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
 
-    let material_handle = materials.add(Color::GREEN.into());
+    for i in 0..plugin_settings.number_of_fields {
+        let mut world = World::new();
 
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: mesh.clone(),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            material: material_handle.clone(),
-            ..Default::default()
-        })
-        .insert(RigidBody::Fixed)
-        .insert(Collider::cuboid(PLANE_SIZE.0, 1.0, PLANE_SIZE.1))
-        .insert(ActiveEvents::CONTACT_FORCE_EVENTS)
-        // .insert(Sensor(true))
-        .insert(Name::new("Ground"));
+        let mut image = Image {
+            texture_descriptor: TextureDescriptor {
+                label: None,
+                size,
+                dimension: TextureDimension::D2,
+                format: TextureFormat::Bgra8UnormSrgb,
+                mip_level_count: 1,
+                sample_count: 1,
+                usage: TextureUsages::TEXTURE_BINDING
+                    | TextureUsages::COPY_DST
+                    | TextureUsages::RENDER_ATTACHMENT,
+            },
+            ..default()
+        };
+        image.resize(size);
+        let image_handle = images.add(image);
+        plugin_settings.render_handles.push(image_handle.clone());
+
+        // Spawn camera
+        world
+            .spawn()
+            .insert_bundle(Camera3dBundle {
+                transform: Transform::from_xyz(5000.0, 3.0, 5001.0)
+                    .looking_at(Vec3::new(5000.0, 0.0, 5000.0), Vec3::Y),
+                camera: Camera {
+                    priority: -1,
+                    target: RenderTarget::Image(image_handle.clone()),
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(DiceCamera)
+            .insert(UiCameraConfig { show_ui: false });
+
+        // Spawn light
+        world.spawn().insert_bundle(DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                shadow_projection: OrthographicProjection {
+                    left: -HALF_SIZE,
+                    right: HALF_SIZE,
+                    bottom: -HALF_SIZE,
+                    top: HALF_SIZE,
+                    near: -10.0 * HALF_SIZE,
+                    far: 10.0 * HALF_SIZE,
+                    ..default()
+                },
+                shadows_enabled: true,
+                ..default()
+            },
+            ..default()
+        });
+
+        // Spawn ground
+        let material_handle = materials.add(Color::GREEN.into());
+
+        world
+            .spawn()
+            .insert_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                transform: Transform::from_xyz(5000.0, 0.0, 5000.0),
+                material: material_handle.clone(),
+                ..Default::default()
+            })
+            .insert(RigidBody::Fixed)
+            .insert(Collider::cuboid(PLANE_SIZE.0, 1.0, PLANE_SIZE.1))
+            .insert(ActiveEvents::CONTACT_FORCE_EVENTS)
+            .insert(Name::new("Ground"));
+
+        plugin_settings.worlds.push(world);
+    }
 }
 
 #[derive(Component)]
-struct Dice;
+struct Dice {
+    pub world: usize,
+}
 
 fn event_start_dice_roll(
     mut commands: Commands,
@@ -132,15 +144,15 @@ fn event_start_dice_roll(
     mut events: EventReader<DiceRollStartEvent>,
     q_dice: Query<(Entity, &Dice)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    dice_settings: Res<DicePluginSettings>,
     mut previous_roll: ResMut<DiceRollResult>,
+    mut plugin_settings: ResMut<DicePluginSettings>,
 ) {
     if events.iter().len() == 0 {
         return;
     }
 
     // Remove previous dice
-    previous_roll.value = Vec::new();
+    previous_roll.values = Vec::new();
 
     // clear previously spawned dice
     q_dice.iter().for_each(|(entity, _)| {
@@ -152,36 +164,42 @@ fn event_start_dice_roll(
 
     let mut rng = rand::thread_rng();
 
-    for _ in 0..dice_settings.num_dice {
-        let rotation = Quat::from_euler(
-            EulerRot::XYZ,
-            rng.gen_range(0.0..std::f32::consts::PI * 2.0),
-            rng.gen_range(0.0..std::f32::consts::PI * 2.0),
-            rng.gen_range(0.0..std::f32::consts::PI * 2.0),
-        );
-        let transform =
-            Transform::from_xyz(0., rng.gen_range(2.0..5.0), 0.).with_rotation(rotation);
+    for event in events.iter() {
+        for (i, mut world) in plugin_settings.worlds.iter_mut().enumerate() {
+            for _i in 0..event.num_dice[i] {
+                let rotation = Quat::from_euler(
+                    EulerRot::XYZ,
+                    rng.gen_range(0.0..std::f32::consts::PI * 2.0),
+                    rng.gen_range(0.0..std::f32::consts::PI * 2.0),
+                    rng.gen_range(0.0..std::f32::consts::PI * 2.0),
+                );
+                let transform = Transform::from_xyz(5000.0, rng.gen_range(2.0..5.0), 5000.0)
+                    .with_rotation(rotation);
 
-        commands
-            .spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                material: transparent_material_handle.clone(),
-                ..default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(SceneBundle {
-                    scene: scene_handle.clone(),
-                    transform: Transform::from_xyz(0., 0.0, 0.).with_scale(Vec3::splat(0.1)),
-                    ..default()
-                });
-            })
-            .insert(transform)
-            .insert(Name::new("Dice"))
-            .insert(RigidBody::Dynamic)
-            .insert(Collider::cuboid(0.04, 0.04, 0.04))
-            .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(Dice);
+                world
+                    .spawn()
+                    .insert_bundle(PbrBundle {
+                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                        material: transparent_material_handle.clone(),
+                        ..default()
+                    })
+                    .with_children(|parent| {
+                        parent.spawn_bundle(SceneBundle {
+                            scene: scene_handle.clone(),
+                            transform: Transform::from_xyz(0., 0.0, 0.)
+                                .with_scale(Vec3::splat(0.1)),
+                            ..default()
+                        });
+                    })
+                    .insert(transform)
+                    .insert(Name::new("Dice"))
+                    .insert(RigidBody::Dynamic)
+                    .insert(Collider::cuboid(0.04, 0.04, 0.04))
+                    .insert(ActiveEvents::COLLISION_EVENTS)
+                    .insert(Dice { world: i });
+            }
+        }
     }
 }
 
@@ -228,7 +246,9 @@ fn event_collisions(
 }
 
 struct DiceRollEndEvent(Entity);
-pub struct DiceRollStartEvent(pub Entity);
+pub struct DiceRollStartEvent {
+    pub num_dice: Vec<usize>,
+}
 
 const CUBE_SIDES: [Vec3; 6] = [
     Vec3::new(0.0, 1.0, 0.0),
@@ -241,7 +261,7 @@ const CUBE_SIDES: [Vec3; 6] = [
 
 #[derive(Default, Clone)]
 pub struct DiceRollResult {
-    pub value: Vec<usize>,
+    pub values: Vec<Vec<usize>>,
 }
 
 fn event_stop_dice_rolls(
@@ -249,11 +269,16 @@ fn event_stop_dice_rolls(
     mut event_writer: EventWriter<DiceRollResult>,
     query: Query<(Entity, &Transform, &Dice)>,
     mut previous_roll: ResMut<DiceRollResult>,
+    plugin_settings: Res<DicePluginSettings>,
 ) {
     for _ in event_reader.iter() {
         let mut result = DiceRollResult { ..default() };
 
-        for (_dice, (_, transform, _)) in query.iter().enumerate() {
+        for _ in plugin_settings.worlds.iter() {
+            result.values.push(Vec::new());
+        }
+
+        for (_, (_, transform, dice)) in query.iter().enumerate() {
             let mut height = 0.0;
             let mut value = 0;
             for (i, side) in CUBE_SIDES.iter().enumerate() {
@@ -264,11 +289,11 @@ fn event_stop_dice_rolls(
                 }
             }
 
-            result.value.push(value);
+            result.values[dice.world].push(value);
         }
 
-        if previous_roll.value != result.value {
-            previous_roll.value = result.value.clone();
+        if previous_roll.values != result.values {
+            previous_roll.values = result.values.clone();
             event_writer.send(result.clone());
         }
     }

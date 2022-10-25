@@ -10,13 +10,15 @@ repository = "https://github.com/stillonearth/bevy_rl"
 
 [dependencies]
 bevy = { version = "0.8.1" }
-bevy-inspector-egui = { version = "0.13.0" }
-bevy-debug-text-overlay = "3.0"
 rand = "0.8.5"
 bevy_rapier3d = { version = "0.17.0", features = [
     "simd-stable",
     "debug-render",
 ] }
+
+[dependencies-dev]
+bevy-inspector-egui = { version = "0.13.0" }
+bevy-debug-text-overlay = "3.0"
 
 [profile.dev]
 opt-level = 3
