@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_debug_text_overlay::{screen_print, OverlayPlugin};
 use bevy_dice::{DicePlugin, DicePluginSettings, DiceRollResult, DiceRollStartEvent};
+use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -10,6 +11,7 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(OverlayPlugin {
             font_size: 32.0,
@@ -17,9 +19,9 @@ fn main() {
         })
         .add_plugin(DicePlugin)
         .insert_resource(DicePluginSettings {
-            num_dice: 1,
-            render_size: (512, 512),
-            render_handle: None,
+            render_size: (640, 720),
+            number_of_fields: 2,
+            ..default()
         })
         .add_startup_system(setup.after("dice_plugin_init"))
         .add_system(button_system)
@@ -38,11 +40,16 @@ fn button_system(
     >,
     mut ev_dice_started: EventWriter<DiceRollStartEvent>,
 ) {
-    for (entity, interaction, mut color, _) in &mut interaction_query {
+    for (_entity, interaction, mut color, _) in &mut interaction_query {
         match *interaction {
             Interaction::Clicked => {
                 *color = PRESSED_BUTTON.into();
-                ev_dice_started.send(DiceRollStartEvent(entity));
+
+                let mut num_dice: Vec<usize> = Vec::new();
+                num_dice.push(2);
+                num_dice.push(2);
+
+                ev_dice_started.send(DiceRollStartEvent { num_dice });
             }
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
@@ -61,10 +68,16 @@ fn setup(
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
-    commands.spawn_bundle(SpriteBundle {
-        texture: dice_plugin_settings.render_handle.clone().unwrap(),
-        ..default()
-    });
+    for render_handle in dice_plugin_settings.render_handles.iter() {
+        commands.spawn_bundle(ImageBundle {
+            image: UiImage(render_handle.clone()),
+            style: Style {
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                ..default()
+            },
+            ..default()
+        });
+    }
 
     commands
         .spawn_bundle(ButtonBundle {
@@ -91,6 +104,13 @@ fn setup(
 
 fn display_roll_result(mut dice_rolls: EventReader<DiceRollResult>) {
     for event in dice_rolls.iter() {
-        screen_print!(col: Color::CYAN, "Dice roll result: {0}", event.value[0]);
+        screen_print!(
+            col: Color::CYAN,
+            "Dice 1 roll result: {0}, {1}\nDice 2 roll result: {2}, {3}",
+            event.values[0][0],
+            event.values[0][1],
+            event.values[1][0],
+            event.values[1][1]
+        );
     }
 }

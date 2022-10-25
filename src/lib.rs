@@ -10,15 +10,15 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 use rand::Rng;
 
-const PLANE_SIZE: (f32, f32) = (32.0, 32.0);
+const PLANE_SIZE: (f32, f32) = (64.0, 64.0);
 
 pub struct DicePlugin;
 
+#[derive(Default)]
 pub struct DicePluginSettings {
     pub render_size: (u32, u32),
     pub number_of_fields: usize,
     pub render_handles: Vec<Handle<Image>>,
-    worlds: Vec<World>,
 }
 
 impl Plugin for DicePlugin {
@@ -39,7 +39,7 @@ pub struct DiceCamera;
 
 const HALF_SIZE: f32 = 1.0;
 fn setup_scene(
-    _commands: Commands,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
@@ -56,10 +56,9 @@ fn setup_scene(
     let mesh = meshes.add(Mesh::from(shape::Plane {
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
     }));
+    let material_handle = materials.add(Color::GREEN.into());
 
-    for _i in 0..plugin_settings.number_of_fields {
-        let mut world = World::new();
-
+    for i in 0..plugin_settings.number_of_fields {
         let mut image = Image {
             texture_descriptor: TextureDescriptor {
                 label: None,
@@ -78,12 +77,13 @@ fn setup_scene(
         let image_handle = images.add(image);
         plugin_settings.render_handles.push(image_handle.clone());
 
+        let start_position = Vec3::new(5000.0 * (i as f32), 0.0, 0.0);
+
         // Spawn camera
-        world
-            .spawn()
-            .insert_bundle(Camera3dBundle {
-                transform: Transform::from_xyz(5000.0, 3.0, 5001.0)
-                    .looking_at(Vec3::new(5000.0, 0.0, 5000.0), Vec3::Y),
+        commands
+            .spawn_bundle(Camera3dBundle {
+                transform: Transform::from_translation(start_position + Vec3::new(1.0, 3.0, 1.0))
+                    .looking_at(start_position, Vec3::Y),
                 camera: Camera {
                     priority: -1,
                     target: RenderTarget::Image(image_handle.clone()),
@@ -92,10 +92,11 @@ fn setup_scene(
                 ..default()
             })
             .insert(DiceCamera)
+            .insert(Name::new("Dice Camera"))
             .insert(UiCameraConfig { show_ui: false });
 
         // Spawn light
-        world.spawn().insert_bundle(DirectionalLightBundle {
+        commands.spawn_bundle(DirectionalLightBundle {
             directional_light: DirectionalLight {
                 shadow_projection: OrthographicProjection {
                     left: -HALF_SIZE,
@@ -109,17 +110,14 @@ fn setup_scene(
                 shadows_enabled: true,
                 ..default()
             },
+            transform: Transform::from_translation(start_position),
             ..default()
         });
 
-        // Spawn ground
-        let material_handle = materials.add(Color::GREEN.into());
-
-        world
-            .spawn()
-            .insert_bundle(PbrBundle {
+        commands
+            .spawn_bundle(PbrBundle {
                 mesh: mesh.clone(),
-                transform: Transform::from_xyz(5000.0, 0.0, 5000.0),
+                transform: Transform::from_translation(start_position),
                 material: material_handle.clone(),
                 ..Default::default()
             })
@@ -127,8 +125,6 @@ fn setup_scene(
             .insert(Collider::cuboid(PLANE_SIZE.0, 1.0, PLANE_SIZE.1))
             .insert(ActiveEvents::CONTACT_FORCE_EVENTS)
             .insert(Name::new("Ground"));
-
-        plugin_settings.worlds.push(world);
     }
 }
 
@@ -146,7 +142,7 @@ fn event_start_dice_roll(
     q_dice: Query<(Entity, &Dice)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut previous_roll: ResMut<DiceRollResult>,
-    mut plugin_settings: ResMut<DicePluginSettings>,
+    plugin_settings: Res<DicePluginSettings>,
 ) {
     if events.iter().len() == 0 {
         return;
@@ -166,22 +162,24 @@ fn event_start_dice_roll(
     let mut rng = rand::thread_rng();
 
     for event in events.iter() {
-        for (i, world) in plugin_settings.worlds.iter_mut().enumerate() {
-            for _i in 0..event.num_dice[i] {
+        for i in 0..plugin_settings.number_of_fields {
+            let start_position = Vec3::new(5000.0 * (i as f32), 0.0, 0.0);
+
+            for _ in 0..event.num_dice[i] {
                 let rotation = Quat::from_euler(
                     EulerRot::XYZ,
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                 );
-                let transform = Transform::from_xyz(5000.0, rng.gen_range(2.0..5.0), 5000.0)
-                    .with_rotation(rotation);
+                let translation = start_position + Vec3::new(0.0, rng.gen_range(2.0..5.0), 0.0);
+                let transform = Transform::from_translation(translation).with_rotation(rotation);
 
-                world
+                commands
                     .spawn()
                     .insert_bundle(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-                        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                        transform: Transform::from_translation(start_position),
                         material: transparent_material_handle.clone(),
                         ..default()
                     })
@@ -275,7 +273,7 @@ fn event_stop_dice_rolls(
     for _ in event_reader.iter() {
         let mut result = DiceRollResult { ..default() };
 
-        for _ in plugin_settings.worlds.iter() {
+        for _ in 0..plugin_settings.number_of_fields {
             result.values.push(Vec::new());
         }
 
