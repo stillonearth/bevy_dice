@@ -33,6 +33,7 @@ const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
+#[allow(clippy::type_complexity)]
 fn button_system(
     mut interaction_query: Query<
         (Entity, &Interaction, &mut UiColor, &Children),
@@ -45,9 +46,7 @@ fn button_system(
             Interaction::Clicked => {
                 *color = PRESSED_BUTTON.into();
 
-                let mut num_dice: Vec<usize> = Vec::new();
-                num_dice.push(2);
-                num_dice.push(2);
+                let mut num_dice: Vec<usize> = vec![2, 2];
 
                 ev_dice_started.send(DiceRollStartEvent { num_dice });
             }
