@@ -77,7 +77,7 @@ fn setup_scene(
         let image_handle = images.add(image);
         plugin_settings.render_handles.push(image_handle.clone());
 
-        let start_position = Vec3::new(5000.0 * (i as f32), 0.0, 0.0);
+        let start_position = Vec3::new(5000.0 * ((i + 1) as f32), 0.0, 0.0);
 
         // Spawn camera
         commands
@@ -163,7 +163,7 @@ fn event_start_dice_roll(
 
     for event in events.iter() {
         for i in 0..plugin_settings.number_of_fields {
-            let start_position = Vec3::new(5000.0 * (i as f32), 0.0, 0.0);
+            let start_position = Vec3::new(5000.0 * ((i + 1) as f32), 0.0, 0.0);
 
             for _ in 0..event.num_dice[i] {
                 let rotation = Quat::from_euler(
