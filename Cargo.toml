@@ -1,6 +1,6 @@
 [package]
 name = "bevy_dice"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Sergei Surovtsev <ssurovsev@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -9,15 +9,33 @@ keywords = ["bevy", "tabletop", "dice"]
 repository = "https://github.com/stillonearth/bevy_rl"
 
 [dependencies]
-bevy = { version = "0.8.1" }
 rand = "0.8.5"
-bevy_rapier3d = { version = "0.17.0", features = [
+bevy_rapier3d = { version = "0.18.0", features = [
     "simd-stable",
     "debug-render",
 ] }
 
+[dependencies.bevy]
+default-features = false
+version = "0.8.1"
+features = [
+    "render",
+    "animation",
+    "bevy_winit",
+    "bevy_gilrs",
+    "png",
+    "jpeg",
+    "hdr",
+    "filesystem_watcher",
+    "x11",
+]
+
+[dev-dependencies.bevy_kira_audio]
+version = "0.12.0"
+default-features = false
+features = ["wav"]
+
 [dev-dependencies]
-bevy-debug-text-overlay = "3.0"
 bevy-inspector-egui = { version = "0.13.0" }
 
 [profile.dev]

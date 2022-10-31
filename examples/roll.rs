@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_debug_text_overlay::{screen_print, OverlayPlugin};
 use bevy_dice::{DicePlugin, DicePluginSettings, DiceRollResult, DiceRollStartEvent};
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_kira_audio::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -11,13 +11,14 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(WorldInspectorPlugin::new())
+        // .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(OverlayPlugin {
             font_size: 32.0,
             ..default()
         })
         .add_plugin(DicePlugin)
+        .add_plugin(AudioPlugin)
         .insert_resource(DicePluginSettings {
             render_size: (640, 720),
             number_of_fields: 2,
@@ -101,8 +102,13 @@ fn setup(
         });
 }
 
-fn display_roll_result(mut dice_rolls: EventReader<DiceRollResult>) {
+fn display_roll_result(
+    mut dice_rolls: EventReader<DiceRollResult>,
+    asset_server: Res<AssetServer>,
+    audio: Res<Audio>,
+) {
     for event in dice_rolls.iter() {
+        audio.play(asset_server.load("sounds/throw.wav"));
         screen_print!(
             col: Color::CYAN,
             "Dice 1 roll result: {0}, {1}\nDice 2 roll result: {2}, {3}",
