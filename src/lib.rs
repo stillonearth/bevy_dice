@@ -5,6 +5,7 @@ use bevy::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
+        texture::BevyDefault,
     },
 };
 use bevy_rapier3d::prelude::*;
@@ -64,7 +65,7 @@ fn setup_scene(
                 label: None,
                 size,
                 dimension: TextureDimension::D2,
-                format: TextureFormat::Bgra8UnormSrgb,
+                format: TextureFormat::bevy_default(),
                 mip_level_count: 1,
                 sample_count: 1,
                 usage: TextureUsages::TEXTURE_BINDING
