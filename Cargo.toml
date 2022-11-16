@@ -1,6 +1,6 @@
 [package]
 name = "bevy_dice"
-version = "0.1.3"
+version = "0.2.0-alpha"
 authors = ["Sergei Surovtsev <ssurovsev@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -10,14 +10,20 @@ repository = "https://github.com/stillonearth/bevy_rl"
 
 [dependencies]
 rand = "0.8.5"
-bevy_rapier3d = { version = "0.18.0", features = [
+bevy_rapier3d = { git = "https://github.com/devil-ira/bevy_rapier.git", branch = "bevy-0.9", features = [
     "simd-stable",
     "debug-render",
 ] }
+nalgebra = "0.31.4"
+
+# { version = "0.18.0", features = [
+#     "simd-stable",
+#     "debug-render",
+# ] }
 
 [dependencies.bevy]
 default-features = false
-version = "0.8.1"
+version = "0.9.0"
 features = [
     "render",
     "animation",
@@ -31,13 +37,13 @@ features = [
 ]
 
 [dev-dependencies.bevy_kira_audio]
-version = "0.12.0"
+version = "0.13.0"
 default-features = false
 features = ["wav"]
 
 [dev-dependencies]
-bevy-inspector-egui = { version = "0.13.0" }
-bevy-debug-text-overlay = "3.0.0"
+bevy-inspector-egui = { version = "0.14.0" }
+bevy-debug-text-overlay = "4.0.1"
 
 [profile.dev]
 opt-level = 3

@@ -10,7 +10,7 @@ Dice rolls are performed in a physical space, rendered to a image handle which y
 
 | Name          | Version |
 | ------------- | ------- |
-| bevy          | 0.8.1   |
+| bevy          | 0.9.0   |
 | bevy_rapier3d | 0.18.0  |
 
 ## Usage

@@ -15,7 +15,7 @@ const PLANE_SIZE: (f32, f32) = (64.0, 64.0);
 
 pub struct DicePlugin;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct DicePluginSettings {
     pub render_size: (u32, u32),
     pub number_of_fields: usize,
@@ -82,7 +82,7 @@ fn setup_scene(
 
         // Spawn camera
         commands
-            .spawn_bundle(Camera3dBundle {
+            .spawn(Camera3dBundle {
                 transform: Transform::from_translation(start_position + Vec3::new(1.0, 3.0, 1.0))
                     .looking_at(start_position, Vec3::Y),
                 camera: Camera {
@@ -97,7 +97,7 @@ fn setup_scene(
             .insert(UiCameraConfig { show_ui: false });
 
         // Spawn light
-        commands.spawn_bundle(DirectionalLightBundle {
+        commands.spawn(DirectionalLightBundle {
             directional_light: DirectionalLight {
                 shadow_projection: OrthographicProjection {
                     left: -HALF_SIZE,
@@ -116,7 +116,7 @@ fn setup_scene(
         });
 
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn(PbrBundle {
                 mesh: mesh.clone(),
                 transform: Transform::from_translation(start_position),
                 material: material_handle.clone(),
@@ -177,15 +177,15 @@ fn event_start_dice_roll(
                 let transform = Transform::from_translation(translation).with_rotation(rotation);
 
                 commands
-                    .spawn()
-                    .insert_bundle(PbrBundle {
+                    .spawn(())
+                    .insert(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
                         transform: Transform::from_translation(start_position),
                         material: transparent_material_handle.clone(),
                         ..default()
                     })
                     .with_children(|parent| {
-                        parent.spawn_bundle(SceneBundle {
+                        parent.spawn(SceneBundle {
                             scene: scene_handle.clone(),
                             transform: Transform::from_xyz(0., 0.0, 0.)
                                 .with_scale(Vec3::splat(0.1)),
@@ -259,7 +259,7 @@ const CUBE_SIDES: [Vec3; 6] = [
     Vec3::new(0.0, -1.0, 0.0),
 ];
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Resource)]
 pub struct DiceRollResult {
     pub values: Vec<Vec<usize>>,
 }
