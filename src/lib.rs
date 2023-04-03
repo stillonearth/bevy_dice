@@ -98,23 +98,10 @@ fn setup_scene(
             .insert(UiCameraConfig { show_ui: false });
 
         // // Spawn light
-        // commands.spawn(DirectionalLightBundle {
-        //     directional_light: DirectionalLight {
-        //         shadow_projection: OrthographicProjection {
-        //             left: -HALF_SIZE,
-        //             right: HALF_SIZE,
-        //             bottom: -HALF_SIZE,
-        //             top: HALF_SIZE,
-        //             near: -10.0 * HALF_SIZE,
-        //             far: 10.0 * HALF_SIZE,
-        //             ..default()
-        //         },
-        //         shadows_enabled: true,
-        //         ..default()
-        //     },
-        //     transform: Transform::from_translation(start_position),
-        //     ..default()
-        // });
+        commands.insert_resource(AmbientLight {
+            color: Color::WHITE,
+            brightness: 0.8,
+        });
 
         commands
             .spawn(PbrBundle {
