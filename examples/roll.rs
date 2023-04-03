@@ -24,7 +24,7 @@ fn main() {
             number_of_fields: 2,
             ..default()
         })
-        .add_startup_system(setup.after("dice_plugin_init"))
+        .add_startup_system(setup)
         .add_system(button_system)
         .add_system(display_roll_result)
         .run();
@@ -37,7 +37,7 @@ const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 #[allow(clippy::type_complexity)]
 fn button_system(
     mut interaction_query: Query<
-        (Entity, &Interaction, &mut UiColor, &Children),
+        (Entity, &Interaction, &mut BackgroundColor, &Children),
         (Changed<Interaction>, With<Button>),
     >,
     mut ev_dice_started: EventWriter<DiceRollStartEvent>,
@@ -66,39 +66,54 @@ fn setup(
     asset_server: Res<AssetServer>,
     dice_plugin_settings: Res<DicePluginSettings>,
 ) {
-    commands.spawn_bundle(Camera2dBundle::default());
-
-    for render_handle in dice_plugin_settings.render_handles.iter() {
-        commands.spawn_bundle(ImageBundle {
-            image: UiImage(render_handle.clone()),
-            style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                ..default()
-            },
-            ..default()
-        });
-    }
+    commands.spawn(Camera2dBundle::default());
 
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
-                justify_content: JustifyContent::Center,
+                size: Size::width(Val::Percent(100.0)),
                 align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
                 ..default()
             },
-            color: NORMAL_BUTTON.into(),
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle::from_section(
-                "Roll Dice",
-                TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 40.0,
-                    color: Color::rgb(0.9, 0.9, 0.9),
-                },
-            ));
+            for render_handle in dice_plugin_settings.render_handles.iter() {
+                parent.spawn(ImageBundle {
+                    image: UiImage {
+                        texture: render_handle.clone(),
+                        ..default()
+                    },
+                    style: Style {
+                        size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                        ..default()
+                    },
+                    ..default()
+                });
+            }
+
+            parent
+                .spawn(ButtonBundle {
+                    style: Style {
+                        size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    background_color: NORMAL_BUTTON.into(),
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Roll Dice",
+                        TextStyle {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    ));
+                });
         });
 }
 

@@ -24,7 +24,7 @@ pub struct DicePluginSettings {
 
 impl Plugin for DicePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_scene.label("dice_plugin_init"))
+        app.add_startup_system(setup_scene)
             .add_event::<DiceRollEndEvent>()
             .add_event::<DiceRollStartEvent>()
             .add_event::<DiceRollResult>()
@@ -56,6 +56,7 @@ fn setup_scene(
     // Ground
     let mesh = meshes.add(Mesh::from(shape::Plane {
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
+        ..default()
     }));
     let material_handle = materials.add(Color::GREEN.into());
 
@@ -71,6 +72,7 @@ fn setup_scene(
                 usage: TextureUsages::TEXTURE_BINDING
                     | TextureUsages::COPY_DST
                     | TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[TextureFormat::Rgba8Unorm],
             },
             ..default()
         };
@@ -86,7 +88,6 @@ fn setup_scene(
                 transform: Transform::from_translation(start_position + Vec3::new(1.0, 3.0, 1.0))
                     .looking_at(start_position, Vec3::Y),
                 camera: Camera {
-                    priority: -1,
                     target: RenderTarget::Image(image_handle.clone()),
                     ..default()
                 },
@@ -96,24 +97,24 @@ fn setup_scene(
             .insert(Name::new("Dice Camera"))
             .insert(UiCameraConfig { show_ui: false });
 
-        // Spawn light
-        commands.spawn(DirectionalLightBundle {
-            directional_light: DirectionalLight {
-                shadow_projection: OrthographicProjection {
-                    left: -HALF_SIZE,
-                    right: HALF_SIZE,
-                    bottom: -HALF_SIZE,
-                    top: HALF_SIZE,
-                    near: -10.0 * HALF_SIZE,
-                    far: 10.0 * HALF_SIZE,
-                    ..default()
-                },
-                shadows_enabled: true,
-                ..default()
-            },
-            transform: Transform::from_translation(start_position),
-            ..default()
-        });
+        // // Spawn light
+        // commands.spawn(DirectionalLightBundle {
+        //     directional_light: DirectionalLight {
+        //         shadow_projection: OrthographicProjection {
+        //             left: -HALF_SIZE,
+        //             right: HALF_SIZE,
+        //             bottom: -HALF_SIZE,
+        //             top: HALF_SIZE,
+        //             near: -10.0 * HALF_SIZE,
+        //             far: 10.0 * HALF_SIZE,
+        //             ..default()
+        //         },
+        //         shadows_enabled: true,
+        //         ..default()
+        //     },
+        //     transform: Transform::from_translation(start_position),
+        //     ..default()
+        // });
 
         commands
             .spawn(PbrBundle {
