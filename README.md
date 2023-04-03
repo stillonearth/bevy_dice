@@ -1,6 +1,6 @@
 # 🎲 bevy_dice
 
-Physics-based dice rolls for bevy. This is a work in progress. You can you this plugin to build tabletop games.
+Physics-based dice rolls for bevy. You can you this plugin to make tabletop games.
 
 https://user-images.githubusercontent.com/97428129/194198974-239a14d2-0056-45c0-982f-06f9604cc5d1.mp4
 

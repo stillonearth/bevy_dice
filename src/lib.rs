@@ -38,7 +38,7 @@ impl Plugin for DicePlugin {
 #[derive(Component)]
 pub struct DiceCamera;
 
-const HALF_SIZE: f32 = 1.0;
+// const HALF_SIZE: f32 = 1.0;
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
