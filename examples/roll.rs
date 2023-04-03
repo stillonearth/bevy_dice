@@ -22,6 +22,7 @@ fn main() {
         .insert_resource(DicePluginSettings {
             render_size: (640, 720),
             number_of_fields: 2,
+            dice_scale: 1.0,
             ..default()
         })
         .add_startup_system(setup)

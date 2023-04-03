@@ -20,6 +20,8 @@ pub struct DicePluginSettings {
     pub render_size: (u32, u32),
     pub number_of_fields: usize,
     pub render_handles: Vec<Handle<Image>>,
+    pub start_position: Vec3,
+    pub dice_scale: f32,
 }
 
 impl Plugin for DicePlugin {
@@ -60,7 +62,7 @@ fn setup_scene(
     }));
     let material_handle = materials.add(Color::GREEN.into());
 
-    for i in 0..plugin_settings.number_of_fields {
+    for _ in 0..plugin_settings.number_of_fields {
         let mut image = Image {
             texture_descriptor: TextureDescriptor {
                 label: None,
@@ -80,13 +82,13 @@ fn setup_scene(
         let image_handle = images.add(image);
         plugin_settings.render_handles.push(image_handle.clone());
 
-        let start_position = Vec3::new(5000.0 * ((i + 1) as f32), 0.0, 0.0);
-
         // Spawn camera
         commands
             .spawn(Camera3dBundle {
-                transform: Transform::from_translation(start_position + Vec3::new(1.0, 3.0, 1.0))
-                    .looking_at(start_position, Vec3::Y),
+                transform: Transform::from_translation(
+                    plugin_settings.start_position + Vec3::new(1.0, 3.0, 1.0),
+                )
+                .looking_at(plugin_settings.start_position, Vec3::Y),
                 camera: Camera {
                     target: RenderTarget::Image(image_handle.clone()),
                     ..default()
@@ -97,7 +99,7 @@ fn setup_scene(
             .insert(Name::new("Dice Camera"))
             .insert(UiCameraConfig { show_ui: false });
 
-        // // Spawn light
+        // Spawn light
         commands.insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 0.8,
@@ -106,7 +108,7 @@ fn setup_scene(
         commands
             .spawn(PbrBundle {
                 mesh: mesh.clone(),
-                transform: Transform::from_translation(start_position),
+                transform: Transform::from_translation(plugin_settings.start_position),
                 material: material_handle.clone(),
                 ..Default::default()
             })
@@ -152,7 +154,7 @@ fn event_start_dice_roll(
 
     for event in events.iter() {
         for i in 0..plugin_settings.number_of_fields {
-            let start_position = Vec3::new(5000.0 * ((i + 1) as f32), 0.0, 0.0);
+            // let start_position = Vec3::new(5000.0 * ((i + 1) as f32), 0.0, 0.0);
 
             for _ in 0..event.num_dice[i] {
                 let rotation = Quat::from_euler(
@@ -161,14 +163,17 @@ fn event_start_dice_roll(
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                 );
-                let translation = start_position + Vec3::new(0.0, rng.gen_range(2.0..5.0), 0.0);
-                let transform = Transform::from_translation(translation).with_rotation(rotation);
+                let translation =
+                    plugin_settings.start_position + Vec3::new(0.0, rng.gen_range(2.0..5.0), 0.0);
+                let transform = Transform::from_translation(translation)
+                    .with_rotation(rotation)
+                    .with_scale(Vec3::splat(plugin_settings.dice_scale));
 
                 commands
                     .spawn(())
                     .insert(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-                        transform: Transform::from_translation(start_position),
+                        transform: Transform::from_translation(plugin_settings.start_position),
                         material: transparent_material_handle.clone(),
                         ..default()
                     })

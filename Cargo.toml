@@ -1,6 +1,6 @@
 [package]
 name = "bevy_dice"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Sergei Surovtsev <ssurovsev@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -15,7 +15,6 @@ bevy_rapier3d = { version = "0.21.0", features = [
     "debug-render",
 ] }
 nalgebra = "0.32.2"
-
 
 [dependencies.bevy]
 default-features = false
