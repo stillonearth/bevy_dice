@@ -241,11 +241,11 @@ pub struct DiceRollStartEvent {
 
 const CUBE_SIDES: [Vec3; 6] = [
     Vec3::new(0.0, 1.0, 0.0),
-    Vec3::new(1.0, 0.0, 0.0),
     Vec3::new(0.0, 0.0, -1.0),
-    Vec3::new(0.0, 0.0, 1.0),
-    Vec3::new(-1.0, 0.0, 0.0),
+    Vec3::new(1.0, 0.0, 0.0),
     Vec3::new(0.0, -1.0, 0.0),
+    Vec3::new(-1.0, 0.0, 0.0),
+    Vec3::new(0.0, 0.0, 1.0),
 ];
 
 #[derive(Default, Clone, Resource)]
