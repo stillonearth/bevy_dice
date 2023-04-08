@@ -45,22 +45,22 @@ fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
+    // mut images: ResMut<Assets<Image>>,
     mut plugin_settings: ResMut<DicePluginSettings>,
 ) {
     // Render target
-    let size = Extent3d {
-        width: plugin_settings.render_size.0,
-        height: plugin_settings.render_size.1,
-        ..default()
-    };
+    // let size = Extent3d {
+    //     width: plugin_settings.render_size.0,
+    //     height: plugin_settings.render_size.1,
+    //     ..default()
+    // };
 
     // Ground
     let mesh = meshes.add(Mesh::from(shape::Plane {
         size: PLANE_SIZE.0 * PLANE_SIZE.1,
         ..default()
     }));
-    let material_handle = materials.add(Color::GREEN.into());
+    let material_handle = materials.add(Color::BLACK.into());
 
     for _ in 0..plugin_settings.number_of_fields {
         // let mut image = Image {
@@ -142,7 +142,7 @@ fn event_start_dice_roll(
         commands.entity(entity).despawn_recursive();
     });
 
-    let scene_handle = asset_server.load("models/dice/scene.gltf#Scene0");
+    let scene_handle = asset_server.load("models/dice.glb#Scene0");
     let transparent_material_handle = materials.add(Color::rgba(0., 0., 0., 0.).into());
 
     let mut rng = rand::thread_rng();
@@ -177,14 +177,14 @@ fn event_start_dice_roll(
                         parent.spawn(SceneBundle {
                             scene: scene_handle.clone(),
                             transform: Transform::from_xyz(0., 0.0, 0.)
-                                .with_scale(Vec3::splat(0.1)),
+                                .with_scale(Vec3::splat(1.0)),
                             ..default()
                         });
                     })
                     // .insert(transform)
                     .insert(Name::new("Dice"))
                     .insert(RigidBody::Dynamic)
-                    .insert(Collider::cuboid(0.05, 0.05, 0.05))
+                    .insert(Collider::cuboid(0.5, 0.5, 0.5))
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(Dice { world: i });
             }
