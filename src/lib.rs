@@ -63,41 +63,41 @@ fn setup_scene(
     let material_handle = materials.add(Color::GREEN.into());
 
     for _ in 0..plugin_settings.number_of_fields {
-        let mut image = Image {
-            texture_descriptor: TextureDescriptor {
-                label: None,
-                size,
-                dimension: TextureDimension::D2,
-                format: TextureFormat::bevy_default(),
-                mip_level_count: 1,
-                sample_count: 1,
-                usage: TextureUsages::TEXTURE_BINDING
-                    | TextureUsages::COPY_DST
-                    | TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[TextureFormat::Rgba8Unorm],
-            },
-            ..default()
-        };
-        image.resize(size);
-        let image_handle = images.add(image);
-        plugin_settings.render_handles.push(image_handle.clone());
+        // let mut image = Image {
+        //     texture_descriptor: TextureDescriptor {
+        //         label: None,
+        //         size,
+        //         dimension: TextureDimension::D2,
+        //         format: TextureFormat::bevy_default(),
+        //         mip_level_count: 1,
+        //         sample_count: 1,
+        //         usage: TextureUsages::TEXTURE_BINDING
+        //             | TextureUsages::COPY_DST
+        //             | TextureUsages::RENDER_ATTACHMENT,
+        //         view_formats: &[TextureFormat::Rgba8Unorm],
+        //     },
+        //     ..default()
+        // };
+        // image.resize(size);
+        // let image_handle = images.add(image);
+        // plugin_settings.render_handles.push(image_handle.clone());
 
         // Spawn camera
-        commands
-            .spawn(Camera3dBundle {
-                transform: Transform::from_translation(
-                    plugin_settings.start_position + Vec3::new(1.0, 3.0, 1.0),
-                )
-                .looking_at(plugin_settings.start_position, Vec3::Y),
-                camera: Camera {
-                    target: RenderTarget::Image(image_handle.clone()),
-                    ..default()
-                },
-                ..default()
-            })
-            .insert(DiceCamera)
-            .insert(Name::new("Dice Camera"))
-            .insert(UiCameraConfig { show_ui: false });
+        // commands
+        //     .spawn(Camera3dBundle {
+        //         transform: Transform::from_translation(
+        //             plugin_settings.start_position + Vec3::new(1.0, 3.0, 1.0),
+        //         )
+        //         .looking_at(plugin_settings.start_position, Vec3::Y),
+        //         camera: Camera {
+        //             target: RenderTarget::Image(image_handle.clone()),
+        //             ..default()
+        //         },
+        //         ..default()
+        //     })
+        //     .insert(DiceCamera)
+        //     .insert(Name::new("Dice Camera"))
+        //     .insert(UiCameraConfig { show_ui: false });
 
         // Ground plane
         commands

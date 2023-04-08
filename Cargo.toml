@@ -1,6 +1,6 @@
 [package]
 name = "bevy_dice"
-version = "0.3.3"
+version = "0.3.4-beta"
 authors = ["Sergei Surovtsev <ssurovsev@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
