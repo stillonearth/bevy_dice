@@ -26,14 +26,14 @@ pub struct DicePluginSettings {
 
 impl Plugin for DicePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_scene)
+        app.insert_resource(DiceRollResult::default())
             .add_event::<DiceRollEndEvent>()
             .add_event::<DiceRollStartEvent>()
             .add_event::<DiceRollResult>()
+            .add_startup_system(setup_scene)
             .add_system(event_collisions)
             .add_system(event_stop_dice_rolls)
-            .add_system(event_start_dice_roll)
-            .insert_resource(DiceRollResult::default());
+            .add_system(event_start_dice_roll);
     }
 }
 
@@ -99,12 +99,7 @@ fn setup_scene(
             .insert(Name::new("Dice Camera"))
             .insert(UiCameraConfig { show_ui: false });
 
-        // Spawn light
-        commands.insert_resource(AmbientLight {
-            color: Color::WHITE,
-            brightness: 0.8,
-        });
-
+        // Ground plane
         commands
             .spawn(PbrBundle {
                 mesh: mesh.clone(),
@@ -163,17 +158,18 @@ fn event_start_dice_roll(
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                     rng.gen_range(0.0..std::f32::consts::PI * 2.0),
                 );
-                let translation =
-                    plugin_settings.start_position + Vec3::new(0.0, rng.gen_range(2.0..5.0), 0.0);
-                let transform = Transform::from_translation(translation)
-                    .with_rotation(rotation)
-                    .with_scale(Vec3::splat(plugin_settings.dice_scale));
+
+                let transform = Transform::from_translation(
+                    plugin_settings.start_position + Vec3::new(0.0, rng.gen_range(4.0..7.0), 0.0),
+                )
+                .with_rotation(rotation)
+                .with_scale(Vec3::splat(plugin_settings.dice_scale));
 
                 commands
                     .spawn(())
                     .insert(PbrBundle {
-                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-                        transform: Transform::from_translation(plugin_settings.start_position),
+                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.10 })),
+                        transform,
                         material: transparent_material_handle.clone(),
                         ..default()
                     })
@@ -185,10 +181,10 @@ fn event_start_dice_roll(
                             ..default()
                         });
                     })
-                    .insert(transform)
+                    // .insert(transform)
                     .insert(Name::new("Dice"))
                     .insert(RigidBody::Dynamic)
-                    .insert(Collider::cuboid(0.04, 0.04, 0.04))
+                    .insert(Collider::cuboid(0.05, 0.05, 0.05))
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(Dice { world: i });
             }
